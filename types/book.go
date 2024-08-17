@@ -1,15 +1,17 @@
 package types
 
+type Categories struct{}
 type Book struct {
-	Name             string   `json:"book"`
+	Title            string   `bson:"title"`
+	Author           string   `bson:"author"`
+	Translator       string   `bson:"translator"`
+	Publication      string   `bson:"publication"`
+	Categories       []string `bson:"categories"`
+	Rate             string   `bson:"rate"`
+	TotalRate        string   `bson:"total_rate"`
+	CoverImage       string   `bson:"cover_image"`
+	Description      string   `bson:"description"`
 	ShortDescription string   `json:"short_description"`
-	Description      string   `json:"description"`
-	Categories       []string `json:"categories"`
-	CoverImage       string   `json:"cover_image"`
-	AuthorName       string   `json:"author_name"`
-	Publication      string   `json:"publication"`
-	PageCount        int32    `json:"page_count"`
-	Rate             int8     `json:"rate"`
-	TotalRate        int      `json:"total_rate"`
 	URL              string   `json:"url"`
+	PublishDate      string   `json:"publish_date"`
 }

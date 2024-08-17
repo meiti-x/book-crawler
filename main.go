@@ -1,70 +1,86 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	md "github.com/JohannesKaufmann/html-to-markdown"
 	"github.com/gocolly/colly/v2"
+	"github.com/meiti-x/book_crawler/types"
 	"github.com/meiti-x/book_crawler/utils"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func main() {
+	// MongoDB setup
+	client, err := mongo.NewClient(options.Client().ApplyURI("mongodb://localhost:27017"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	err = client.Connect(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer client.Disconnect(ctx)
+
+	collection := client.Database("bookstore").Collection("books")
+
 	converter := md.NewConverter("", true, nil)
 
 	c := colly.NewCollector(
 		colly.AllowedDomains("taaghche.com"),
 		colly.UserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36"),
+		colly.MaxDepth(2),
 	)
 
-	fmt.Println(utils.ConvertPersianDigitsToEnglish("tset 1234"))
-
-	c.OnHTML("#book-description", func(e *colly.HTMLElement) {
-		fmt.Print("\n \n")
-		fmt.Println("=========")
-		// Get the raw HTML of the element
-		rawHTML, err := e.DOM.Html()
-		if err != nil {
-			fmt.Errorf(err.Error())
-		}
-
-		// Convert HTML to Markdown
-		markdown, err := converter.ConvertString(rawHTML)
-		if err != nil {
-			log.Fatalf("Error converting HTML to Markdown: %v", err)
-		}
-
-		// Print or use the Markdown content
-		fmt.Println(markdown)
-		fmt.Println("=========")
-		fmt.Print("\n \n")
-	})
-
+	visitedURLs := make(map[string]bool)
 	c.OnHTML("[class^='bookPage_bookPageContainer']", func(e *colly.HTMLElement) {
 		title := e.ChildText("h1")
 		authorName := e.ChildText("[class^='bookHeader_bookInfo_']:nth-child(1) span:nth-child(2)")
 		translator := e.ChildText("[class^='bookHeader_bookInfo_']:nth-child(2) span:nth-child(2) span")
 		publication := e.ChildText("[class^='bookHeader_bookInfo_']:nth-child(3) span:nth-child(2) span")
-		categories := e.ChildText("[class^='categories_categoriesGroup_']")
-		rate := e.ChildText("[class^='rate_rate'] span:nth-child(1)")
-		totalRate := e.ChildText("[class^='rate_rate'] span:nth-child(2)")
-		// shortDescription := e.ChildText("[class^='rate_rate'] span:nth-child(2)")
+		categories := strings.Split(e.ChildText("[class^='categories_categoriesGroup_']"), "،")
+		publishDate := utils.ConvertPersianDigitsToEnglish(e.ChildText("[class^='more_info_']:nth-child(2) p:nth-child(2)"))
 		coverImage := e.ChildAttr("img", "src")
+		rate := utils.ConvertPersianDigitsToEnglish(e.ChildText("[class^='rate_rate'] span:nth-child(1)"))
+		totalRate := utils.ConvertPersianDigitsToEnglish(e.ChildText("[class^='rate_rate'] span:nth-child(2)"))
+		if err != nil {
+			fmt.Println("Error:", err)
+		}
 
-		fmt.Print("\n \n")
-		fmt.Println("=========")
-		fmt.Println("title", title)
-		fmt.Println("authorName", authorName)
-		fmt.Println("translator", translator)
-		fmt.Println("coverImage", coverImage)
-		fmt.Println("publication", publication)
-		fmt.Println("publication", strings.Split(categories, "،"))
-		fmt.Println("rate", utils.ConvertPersianDigitsToEnglish(rate))
-		fmt.Println("totalRate", utils.ConvertPersianDigitsToEnglish(totalRate))
+		var descriptionMarkdown string
+		e.ForEach("#book-description", func(_ int, el *colly.HTMLElement) {
+			rawHTML, err := el.DOM.Html()
+			if err == nil {
+				descriptionMarkdown, _ = converter.ConvertString(rawHTML)
+			}
+		})
 
-		fmt.Println("=========")
-		fmt.Print("\n \n")
+		book := &types.Book{
+			Title:       title,
+			Author:      authorName,
+			Translator:  translator,
+			Publication: publication,
+			Categories:  categories,
+			Rate:        rate,
+			TotalRate:   totalRate,
+			CoverImage:  coverImage,
+			Description: descriptionMarkdown,
+			PublishDate: publishDate,
+		}
+
+		_, err := collection.InsertOne(ctx, book)
+		if err != nil {
+			log.Fatalf("Failed to insert document: %v", err)
+		}
+		fmt.Printf("\n======== Book %s has Been Inserted\n", title)
 	})
 
 	c.OnHTML("a[href]", func(e *colly.HTMLElement) {
@@ -75,8 +91,13 @@ func main() {
 	})
 
 	c.OnRequest(func(r *colly.Request) {
-		fmt.Println("Visiting", r.URL.String())
+		if visitedURLs[r.URL.String()] {
+			r.Abort()
+		}
+		visitedURLs[r.URL.String()] = true
 	})
 
 	c.Visit("https://taaghche.com/")
+
+	fmt.Println("Data written to MongoDB successfully.")
 }
