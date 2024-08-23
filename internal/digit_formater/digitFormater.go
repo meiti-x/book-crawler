@@ -1,9 +1,10 @@
-package digit_formatter
+package digit_formater
 
 import (
 	"strings"
 )
 
+// ConvertPersianDigitsToEnglish remove all non english digit from a string.
 func ConvertPersianDigitsToEnglish(input string) string {
 	persianToEnglish := map[rune]rune{
 		'۰': '0',
