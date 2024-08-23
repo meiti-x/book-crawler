@@ -1,4 +1,4 @@
-package utils
+package digit_formatter
 
 import (
 	"strings"
