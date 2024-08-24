@@ -11,8 +11,8 @@ type Book struct {
 	TotalRate        string   `bson:"total_rate"`
 	CoverImage       string   `bson:"cover_image"`
 	Description      string   `bson:"description"`
-	ShortDescription string   `json:"short_description"`
-	URL              string   `json:"url"`
-	PublishDate      string   `json:"publish_date"`
-	BookID           string   `json:"book_id"`
+	ShortDescription string   `bson:"short_description"`
+	URL              string   `bson:"url"`
+	PublishDate      string   `bson:"publish_date"`
+	BookID           string   `bson:"book_id"`
 }

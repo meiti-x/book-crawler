@@ -7,6 +7,7 @@ import (
 	"github.com/meiti-x/book_crawler/init/crawler"
 	initdb "github.com/meiti-x/book_crawler/init/db"
 	"github.com/meiti-x/book_crawler/internal/book_parser"
+	"go.mongodb.org/mongo-driver/bson"
 	"log"
 	"strings"
 
@@ -29,14 +30,24 @@ func main() {
 
 	visitedURLs := make(map[string]bool)
 
-	// Callback for processing the book page data
 	c.OnHTML("[class^='bookPage_bookPageContainer']", func(e *colly.HTMLElement) {
 		book := book_parser.ParseDom(e)
-		_, err := collection.InsertOne(ctx, book)
+
+		filter := bson.M{"book_id": book.BookID}
+		count, err := collection.CountDocuments(ctx, filter)
 		if err != nil {
-			log.Fatalf("Failed to insert document: %v", err)
+			log.Fatalf("Failed to check if document exists: %v", err)
 		}
-		fmt.Printf("======== Book %s has Been Inserted\n", book.Title)
+
+		if count == 0 {
+			_, err := collection.InsertOne(ctx, book)
+			if err != nil {
+				log.Fatalf("Failed to insert document: %v", err)
+			}
+			fmt.Printf("======== Book %s has Been Inserted\n", book.Title)
+		} else {
+			fmt.Printf("======== Book %s already exists in the database\n", book.Title)
+		}
 	})
 
 	// Callback for finding links
