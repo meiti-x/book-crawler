@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-// ParseDom is extract required data from data.
+// ParseDom is extract required data from data
 func ParseDom(e *colly.HTMLElement) *types.Book {
 	converter := md.NewConverter("", true, nil)
 

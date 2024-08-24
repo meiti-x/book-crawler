@@ -14,4 +14,5 @@ type Book struct {
 	ShortDescription string   `json:"short_description"`
 	URL              string   `json:"url"`
 	PublishDate      string   `json:"publish_date"`
+	BookID           string   `json:"book_id"`
 }

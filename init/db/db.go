@@ -5,18 +5,19 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
+	"os"
 )
 
 // InitializeDatabase initializes the MongoDB connection and returns the collection.
-func InitializeDatabase(uri, dbName, collectionName string) (*mongo.Client, *mongo.Collection, error) {
+func InitializeDatabase() (*mongo.Client, *mongo.Collection, error) {
 	ctx := context.Background()
 
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(os.Getenv("DB_URI")))
 	if err != nil {
 		return nil, nil, err
 	}
 
-	collection := client.Database(dbName).Collection(collectionName)
+	collection := client.Database(os.Getenv("DB_NAME")).Collection("books")
 
 	return client, collection, nil
 }
