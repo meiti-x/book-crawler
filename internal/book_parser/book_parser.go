@@ -20,7 +20,6 @@ func ParseDom(e *colly.HTMLElement) *types.Book {
 	translator := e.ChildText("[class^='bookHeader_bookInfo_']:nth-child(2) span:nth-child(2) span")
 	publication := e.ChildText("[class^='bookHeader_bookInfo_']:nth-child(3) span:nth-child(2) span")
 	categories := strings.Split(e.ChildText("[class^='categories_categoriesGroup_']"), "،")
-	publishDate := digitformatter.ConvertPersianDigitsToEnglish(e.ChildText("[class^='moreInfo_info']:nth-child(3) [class^='moreInfo_value']"))
 	coverImage := e.ChildAttr("img", "src")
 	rate := digitformatter.ConvertPersianDigitsToEnglish(e.ChildText("[class^='rate_rate_'] span:nth-child(1)"))
 	totalRate := digitformatter.ConvertPersianDigitsToEnglish(e.ChildText("[class^='rate_rate_'] span:nth-child(2)"))
@@ -44,7 +43,6 @@ func ParseDom(e *colly.HTMLElement) *types.Book {
 		TotalRate:   totalRate,
 		CoverImage:  coverImage,
 		Description: descriptionMarkdown,
-		PublishDate: publishDate,
 		BookID:      bookID,
 		URL:         e.Request.URL.String(),
 	}

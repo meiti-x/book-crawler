@@ -1,6 +1,5 @@
 package types
 
-type Categories struct{}
 type Book struct {
 	Title       string   `bson:"title"`
 	Author      string   `bson:"author"`
