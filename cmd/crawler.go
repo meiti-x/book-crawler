@@ -8,6 +8,7 @@ import (
 	"github.com/meiti-x/book_crawler/init/crawler"
 	initdb "github.com/meiti-x/book_crawler/init/db"
 	"github.com/meiti-x/book_crawler/internal/book_parser"
+	"github.com/meiti-x/book_crawler/internal/cache_storage"
 	"go.mongodb.org/mongo-driver/bson"
 	"log"
 	"strings"
@@ -32,7 +33,22 @@ func main() {
 	c := crawler.InitializeColly()
 
 	visitedURLs := make(map[string]bool)
+	cache := cache_storage.NewSafeCache("./cache")
 
+	c.OnResponse(func(r *colly.Response) {
+		key := r.Request.URL.String()
+		cache.Save(key, r.Body)
+	})
+
+	c.OnRequest(func(r *colly.Request) {
+		key := r.URL.String()
+		content, err := cache.Load(key)
+		if err == nil {
+			fmt.Println(content)
+
+			//r.Abort() // Prevent the request from being sent over the network
+		}
+	})
 	c.OnHTML("[class^='bookPage_bookPageContainer']", func(e *colly.HTMLElement) {
 		book := book_parser.ParseDom(e)
 
