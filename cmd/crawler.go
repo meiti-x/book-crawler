@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/gocolly/colly/v2"
 	"github.com/joho/godotenv"
 	"github.com/meiti-x/book_crawler/init/crawler"
 	initdb "github.com/meiti-x/book_crawler/init/db"
@@ -10,8 +11,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"log"
 	"strings"
-
-	"github.com/gocolly/colly/v2"
 )
 
 func main() {
@@ -19,11 +18,15 @@ func main() {
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
+
 	client, collection, err := initdb.InitializeDatabase()
+
 	ctx := context.Background()
+
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	defer initdb.DisconnectDatabase(ctx, client)
 
 	c := crawler.InitializeColly()
@@ -50,7 +53,6 @@ func main() {
 		}
 	})
 
-	// Callback for finding links
 	c.OnHTML("a[href]", func(e *colly.HTMLElement) {
 		link := e.Request.AbsoluteURL(e.Attr("href"))
 		if strings.Contains(link, "/book") {
@@ -63,5 +65,6 @@ func main() {
 	})
 
 	c.Visit("https://taaghche.com/")
+	c.Wait()
 
 }
