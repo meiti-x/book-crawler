@@ -1,4 +1,4 @@
-package extract_book_id
+package book
 
 import (
 	"fmt"

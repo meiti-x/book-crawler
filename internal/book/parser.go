@@ -1,17 +1,29 @@
-package book_parser
+package book
 
 import (
 	"fmt"
 	md "github.com/JohannesKaufmann/html-to-markdown"
 	"github.com/gocolly/colly/v2"
-	digitformatter "github.com/meiti-x/book_crawler/internal/digit_formater"
-	"github.com/meiti-x/book_crawler/internal/extract_book_id"
-	"github.com/meiti-x/book_crawler/types"
+	digitformatter "github.com/meiti-x/book_crawler/internal/formater"
 	"strings"
 )
 
+type Book struct {
+	Title       string   `bson:"title"`
+	Author      string   `bson:"author"`
+	Translator  string   `bson:"translator"`
+	Publication string   `bson:"publication"`
+	Categories  []string `bson:"categories"`
+	Rate        string   `bson:"rate"`
+	TotalRate   string   `bson:"total_rate"`
+	CoverImage  string   `bson:"cover_image"`
+	Description string   `bson:"description"`
+	URL         string   `bson:"url"`
+	BookID      string   `bson:"book_id"`
+}
+
 // ParseDom is extract required data from data
-func ParseDom(e *colly.HTMLElement) *types.Book {
+func ParseDom(e *colly.HTMLElement) *Book {
 	fmt.Println(e.ChildText("[class^='moreInfo_info']:nth-child(3) [class^='moreInfo_value']"))
 	converter := md.NewConverter("", true, nil)
 
@@ -23,7 +35,7 @@ func ParseDom(e *colly.HTMLElement) *types.Book {
 	coverImage := e.ChildAttr("img", "src")
 	rate := digitformatter.ConvertPersianDigitsToEnglish(e.ChildText("[class^='rate_rate_'] span:nth-child(1)"))
 	totalRate := digitformatter.ConvertPersianDigitsToEnglish(e.ChildText("[class^='rate_rate_'] span:nth-child(2)"))
-	bookID, _ := extract_book_id.ExtractIDFromURL(e.Request.URL)
+	bookID, _ := ExtractIDFromURL(e.Request.URL)
 
 	var descriptionMarkdown string
 	e.ForEach("#book-description", func(_ int, el *colly.HTMLElement) {
@@ -33,7 +45,7 @@ func ParseDom(e *colly.HTMLElement) *types.Book {
 		}
 	})
 
-	book := &types.Book{
+	book := &Book{
 		Title:       title,
 		Author:      authorName,
 		Translator:  translator,

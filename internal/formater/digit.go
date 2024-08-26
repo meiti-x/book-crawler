@@ -1,4 +1,4 @@
-package digit_formater
+package formater
 
 import (
 	"strings"

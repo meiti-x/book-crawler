@@ -6,8 +6,8 @@ import (
 	"github.com/gocolly/colly/v2"
 	"github.com/joho/godotenv"
 	"github.com/meiti-x/book_crawler/init/crawler"
-	initdb "github.com/meiti-x/book_crawler/init/db"
-	"github.com/meiti-x/book_crawler/internal/book_parser"
+	"github.com/meiti-x/book_crawler/init/db"
+	"github.com/meiti-x/book_crawler/internal/book"
 	"go.mongodb.org/mongo-driver/bson"
 	"log"
 	"strings"
@@ -19,7 +19,7 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
-	client, collection, err := initdb.InitializeDatabase()
+	client, collection, err := db.InitializeDatabase()
 
 	ctx := context.Background()
 
@@ -27,9 +27,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	defer initdb.DisconnectDatabase(ctx, client)
+	defer db.DisconnectDatabase(ctx, client)
 
-	err = initdb.CreateBookIDIndex(ctx, collection)
+	err = db.CreateBookIDIndex(ctx, collection)
 	if err != nil {
 		log.Fatalf("Failed to create index: %v", err)
 	}
@@ -38,7 +38,7 @@ func main() {
 	visitedURLs := make(map[string]bool)
 
 	c.OnHTML("[class^='bookPage_bookPageContainer']", func(e *colly.HTMLElement) {
-		book := book_parser.ParseDom(e)
+		book := book.ParseDom(e)
 
 		filter := bson.M{"book_id": book.BookID}
 		count, err := collection.CountDocuments(ctx, filter)
